@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    @apply font-sans antialiased text-zinc-900 bg-zinc-50;
+  }
+
+  :root {
+    --scrollbar-track: theme('colors.zinc.100');
+    --scrollbar-thumb: theme('colors.zinc.300');
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: theme('colors.zinc.400'); }
+}
+
+@layer utilities {
+  .animate-in { animation-fill-mode: both; }
+  .fade-in-0 { animation: fadeIn 0.15s ease-out; }
+  .zoom-in-95 { animation: zoomIn 0.15s ease-out; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); }
+  to   { transform: scale(1); }
+}
