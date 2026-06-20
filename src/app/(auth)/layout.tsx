@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -11,7 +11,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace('/dashboard')
+      const params = new URLSearchParams(window.location.search)
+      const redirect = params.get('redirect')
+      const destination =
+        redirect && redirect.startsWith('/') && !redirect.startsWith('//')
+          ? redirect
+          : '/dashboard'
+      router.replace(destination)
     }
   }, [isAuthenticated, isLoading, router])
 
@@ -26,9 +32,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4 py-12">
       <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600">
-          <Bell className="h-5 w-5 text-white" />
-        </div>
+        <Image src="/lazybell.png" alt="Lazybell" width={40} height={40} className="rounded-xl" />
         <span className="text-xl font-bold text-white">Lazybell</span>
       </div>
       <div className="w-full max-w-sm">
