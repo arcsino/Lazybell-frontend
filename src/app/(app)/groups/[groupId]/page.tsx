@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertCircle,
   Calendar,
   Settings,
   Users,
@@ -46,7 +47,7 @@ import { PageLoader } from "@/components/ui/spinner";
 import { GroupForm } from "@/components/groups/group-form";
 import { ScheduleCard } from "@/components/schedules/schedule-card";
 import { ScheduleForm } from "@/components/schedules/schedule-form";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDate, getInitials, isOverdue } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type {
   MyPermissions,
@@ -293,20 +294,28 @@ function SchedulesTab({
     completed: "完了",
   } as const;
 
-  const filtered = schedules
-    .filter((s) => {
-      if (filter === "pending" && s.completed_by_me) return false;
-      if (filter === "completed" && !s.completed_by_me) return false;
-      if (subjectFilter && s.subject?.id !== subjectFilter) return false;
-      if (tagFilter && !s.tags.some((t) => t.id === tagFilter)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (!a.deadline && !b.deadline) return 0;
-      if (!a.deadline) return 1;
-      if (!b.deadline) return -1;
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-    });
+  const filtered = schedules.filter((s) => {
+    if (filter === "pending" && s.completed_by_me) return false;
+    if (filter === "completed" && !s.completed_by_me) return false;
+    if (subjectFilter && s.subject?.id !== subjectFilter) return false;
+    if (tagFilter && !s.tags.some((t) => t.id === tagFilter)) return false;
+    return true;
+  });
+
+  const byDeadline = (a: Schedule, b: Schedule) => {
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  };
+
+  const activeSchedules = filtered
+    .filter((s) => !isOverdue(s.deadline) || s.completed_by_me)
+    .sort(byDeadline);
+
+  const overdueSchedules = filtered
+    .filter((s) => isOverdue(s.deadline) && !s.completed_by_me)
+    .sort(byDeadline);
 
   const hasFilters = subjectFilter || tagFilter;
 
@@ -462,19 +471,49 @@ function SchedulesTab({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((s) => (
-            <ScheduleCard
-              key={s.id}
-              schedule={s}
-              groupId={groupId}
-              permissions={perms}
-              currentUserId={currentUserId}
-              onComplete={() => handleComplete(s)}
-              onEdit={() => setEditSchedule(s)}
-              onDelete={() => handleDelete(s)}
-            />
-          ))}
+        <div className="space-y-6">
+          {activeSchedules.length > 0 && (
+            <div className="space-y-3">
+              {activeSchedules.map((s) => (
+                <ScheduleCard
+                  key={s.id}
+                  schedule={s}
+                  groupId={groupId}
+                  permissions={perms}
+                  currentUserId={currentUserId}
+                  onComplete={() => handleComplete(s)}
+                  onEdit={() => setEditSchedule(s)}
+                  onDelete={() => handleDelete(s)}
+                />
+              ))}
+            </div>
+          )}
+
+          {overdueSchedules.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                <span className="text-sm font-semibold text-red-600">
+                  期限超過 ({overdueSchedules.length})
+                </span>
+                <div className="flex-1 border-t border-red-200" />
+              </div>
+              <div className="space-y-3 opacity-60">
+                {overdueSchedules.map((s) => (
+                  <ScheduleCard
+                    key={s.id}
+                    schedule={s}
+                    groupId={groupId}
+                    permissions={perms}
+                    currentUserId={currentUserId}
+                    onComplete={() => handleComplete(s)}
+                    onEdit={() => setEditSchedule(s)}
+                    onDelete={() => handleDelete(s)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
