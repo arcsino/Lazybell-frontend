@@ -44,6 +44,13 @@ export interface Invite {
   created_at: string
 }
 
+export interface PendingInvite {
+  id: string
+  user: PublicUser
+  invited_by: PublicUser
+  created_at: string
+}
+
 export interface RolePermission {
   can_invite_user: boolean
   can_remove_member: boolean

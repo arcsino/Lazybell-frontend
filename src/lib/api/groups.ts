@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import type {
-  Group, GroupRole, GroupWebhook, Invite, MemberRelation, MyPermissions, RolePermission, Subject, Tag, WebhookType
+  Group, GroupRole, GroupWebhook, Invite, MemberRelation, MyPermissions, PendingInvite, RolePermission, Subject, Tag, WebhookType
 } from '@/types'
 
 export const groupsApi = {
@@ -52,6 +52,12 @@ export const groupsApi = {
   // Invites
   invite: (id: string, user_id: string) =>
     api.post<Invite>(`/groups/${id}/invite/`, { user_id }).then((r) => r.data),
+
+  pendingInvites: (id: string) =>
+    api.get<PendingInvite[]>(`/groups/${id}/invite/`).then((r) => r.data),
+
+  cancelInvite: (id: string, invite_id: string) =>
+    api.delete(`/groups/${id}/invites/${invite_id}/`),
 
   // Roles
   roles: (id: string) =>

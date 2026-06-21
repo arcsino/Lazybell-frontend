@@ -50,6 +50,7 @@ import { formatDate, getInitials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type {
   MyPermissions,
+  PendingInvite,
   Schedule,
   GroupRole,
   RolePermission,
@@ -537,6 +538,11 @@ function MembersTab({
     queryFn: () => groupsApi.bannedMembers(groupId),
     enabled: perms.can_remove_member,
   });
+  const { data: pendingInvites = [] as PendingInvite[] } = useQuery({
+    queryKey: ["pending-invites", groupId],
+    queryFn: () => groupsApi.pendingInvites(groupId),
+    enabled: perms.can_invite_user,
+  });
   const { data: roles = [] } = useQuery({
     queryKey: ["roles", groupId],
     queryFn: () => groupsApi.roles(groupId),
@@ -546,6 +552,7 @@ function MembersTab({
     qc.invalidateQueries({ queryKey: ["members", groupId] });
     qc.invalidateQueries({ queryKey: ["pending-members", groupId] });
     qc.invalidateQueries({ queryKey: ["banned-members", groupId] });
+    qc.invalidateQueries({ queryKey: ["pending-invites", groupId] });
   };
 
   const handleInvite = async () => {
@@ -556,10 +563,22 @@ function MembersTab({
       toast("招待を送りました！", "success");
       setInviteOpen(false);
       setInviteUsername("");
+      qc.invalidateQueries({ queryKey: ["pending-invites", groupId] });
     } catch (err) {
       toast(extractApiError(err), "error");
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string, nickname: string) => {
+    if (!confirm(`${nickname} への招待を取り消しますか？`)) return;
+    try {
+      await groupsApi.cancelInvite(groupId, inviteId);
+      qc.invalidateQueries({ queryKey: ["pending-invites", groupId] });
+      toast("招待を取り消しました。", "success");
+    } catch (err) {
+      toast(extractApiError(err), "error");
     }
   };
 
@@ -759,6 +778,37 @@ function MembersTab({
                     </Button>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending invites */}
+      {perms.can_invite_user && pendingInvites.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            招待中 ({pendingInvites.length})
+          </h4>
+          <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white overflow-hidden">
+            {pendingInvites.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-3 px-4 py-3">
+                <Link href={`/users/${inv.user.id}`} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-75 transition-opacity">
+                  <Avatar>
+                    <AvatarFallback>{getInitials(inv.user.nickname)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-zinc-900 truncate">{inv.user.nickname}</p>
+                    <p className="text-xs text-zinc-400">招待者: {inv.invited_by.nickname}</p>
+                  </div>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="danger-outline"
+                  onClick={() => handleCancelInvite(inv.id, inv.user.nickname)}
+                >
+                  取り消し
+                </Button>
               </div>
             ))}
           </div>
